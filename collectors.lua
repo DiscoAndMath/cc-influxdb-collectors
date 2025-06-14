@@ -3,14 +3,13 @@ local collectors = {}
 -- Big Reactor Collector
 
 collectors.bigreactor = function(peripheral_name)
-  local reactor = peripheral.wrap(peripheral_name)
-  if not reactor then
-    error("No peripheral found with name: " .. tostring(peripheral_name))
-  end
   return {
     collect = function()
+      if not peripheral.isPresent(peripheral_name) then
+        return nil, "No peripheral found with name: " .. tostring(peripheral_name)
+      end
       local stats = {}
-
+      local reactor = peripheral.wrap(peripheral_name)
       -- Direct values
       stats.casing_temperature = reactor.getCasingTemperature()
       stats.active = reactor.getActive()
@@ -59,19 +58,19 @@ collectors.bigreactor = function(peripheral_name)
         stats.coolant_fluid_capacity = coolant.fluidCapacity
       end
 
-      return stats
+      return stats, nil
     end
   }
 end
 
 collectors.inductionport = function(peripheral_name)
-  local port = peripheral.wrap(peripheral_name)
-  if not port then
-    error("No peripheral found with name: " .. tostring(peripheral_name))
-  end
   return {
     collect = function()
+      if not peripheral.isPresent(peripheral_name) then
+        return nil, "No peripheral found with name: " .. tostring(peripheral_name)
+      end
       local stats = {}
+      local port = peripheral.wrap(peripheral_name)
 
       stats.max_energy = port.getMaxEnergy()
       stats.energy_filled_percentage = port.getEnergyFilledPercentage()
@@ -85,26 +84,27 @@ collectors.inductionport = function(peripheral_name)
       stats.width = port.getWidth()
       stats.transfer_cap = port.getTransferCap()
 
-      return stats
+      return stats, nil
     end
   }
 end
 
 collectors.me_bridge = function(peripheral_name, blockreader_name)
-  local bridge = peripheral.wrap(peripheral_name)
-  if not bridge then
-    error("No peripheral found with name: " .. tostring(peripheral_name))
-  end
-  local blockreader = nil
-  if blockreader_name then
-    blockreader = peripheral.wrap(blockreader_name)
-    if not blockreader then
-      error("No blockReader found with name: " .. tostring(blockreader_name))
-    end
-  end
   return {
     collect = function()
+      if not peripheral.isPresent(peripheral_name) then
+        return nil, "No peripheral found with name: " .. tostring(peripheral_name)
+      end
       local stats = {}
+      local bridge = peripheral.wrap(peripheral_name)
+      local blockreader = nil
+      if blockreader_name then
+        if not peripheral.isPresent(blockreader_name) then
+          return nil, "No blockReader found with name: " .. tostring(blockreader_name)
+        end
+        blockreader = peripheral.wrap(blockreader_name)
+      end
+
       stats.total_item_storage = bridge.getTotalItemStorage()
       stats.used_item_storage = bridge.getUsedItemStorage()
       stats.available_item_storage = bridge.getAvailableItemStorage()
@@ -150,7 +150,6 @@ collectors.me_bridge = function(peripheral_name, blockreader_name)
         end
       end
 
-
       -- If blockreader is present, try to extract item names from lectern book (NBT structure)
       if blockreader then
         local ok, blockdata = pcall(function() return blockreader.getBlockData() end)
@@ -186,7 +185,7 @@ collectors.me_bridge = function(peripheral_name, blockreader_name)
         end
       end
 
-      return stats
+      return stats, nil
     end
   }
 end
