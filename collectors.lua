@@ -162,10 +162,10 @@ collectors.me_bridge = function(peripheral_name, blockreader_name)
               local item_names = {}
               for _, page in ipairs(book_content.pages) do
                 if type(page) == "table" and type(page.raw) == "string" then
-                  for line in page.raw:gmatch("[^\r\n]+") do
-                    -- Remove any non-letter character from the start
-                    local clean_line = line:gsub("^[^a-zA-Z]+", "")
-                    table.insert(item_names, clean_line)
+                  -- Remove the first two characters from the page (to skip color codes or weirdness)
+                  local page_text = page.raw:sub(3)
+                  for line in page_text:gmatch("[^\r\n]+") do
+                    table.insert(item_names, line)
                   end
                 end
               end
