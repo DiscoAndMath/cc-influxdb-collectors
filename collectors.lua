@@ -1,6 +1,3 @@
--- collectors.lua
--- Provides modular collectors for various peripherals, returning a collect() function for each.
-
 local collectors = {}
 
 -- Big Reactor Collector
@@ -88,6 +85,62 @@ collectors.inductionport = function(peripheral_name)
       stats.width = port.getWidth()
       stats.transfer_cap = port.getTransferCap()
 
+      return stats
+    end
+  }
+end
+
+collectors.me_bridge = function(peripheral_name)
+  local bridge = peripheral.wrap(peripheral_name)
+  if not bridge then
+    error("No peripheral found with name: " .. tostring(peripheral_name))
+  end
+  return {
+    collect = function()
+      local stats = {}
+      stats.total_item_storage = bridge.getTotalItemStorage()
+      stats.used_item_storage = bridge.getUsedItemStorage()
+      stats.available_item_storage = bridge.getAvailableItemStorage()
+
+      stats.total_fluid_storage = bridge.getTotalFluidStorage()
+      stats.used_fluid_storage = bridge.getUsedFluidStorage()
+      stats.available_fluid_storage = bridge.getAvailableFluidStorage()
+
+      stats.energy_storage = bridge.getEnergyStorage()
+      stats.max_energy_storage = bridge.getMaxEnergyStorage()
+      stats.energy_usage = bridge.getEnergyUsage()
+      stats.avg_power_injection = bridge.getAvgPowerInjection()
+      stats.avg_power_usage = bridge.getAvgPowerUsage()
+
+      -- Crafting CPUs
+      -- For each CPU, the following fields are created:
+      --   crafting_cpu_<name>[_n]_coprocessors: Number of coprocessors in the CPU
+      --   crafting_cpu_<name>[_n]_busy: Whether the CPU is currently busy
+      --   crafting_cpu_<name>[_n]_storage: Storage in bytes for the CPU
+      -- If multiple CPUs have the same name, a numeric suffix (_2, _3, etc.) is added to ensure uniqueness.
+      local cpus = bridge.getCraftingCPUs()
+      if type(cpus) == "table" then
+        local name_count = {}
+        for i, cpu in ipairs(cpus) do
+          local name = (cpu.name or "unnamed"):lower()
+          local base = "crafting_cpu_" .. name
+          local field = base
+          if stats[field .. "_coprocessors"] then
+            local n = name_count[name] or 1
+            repeat
+              n = n + 1
+              field = base .. "_" .. n
+            until not stats[field .. "_coprocessors"]
+            name_count[name] = n
+            base = field
+          else
+            name_count[name] = 1
+          end
+          stats[base .. "_coprocessors"] = cpu.coProcessors
+          stats[base .. "_busy"] = cpu.isBusy
+          stats[base .. "_storage"] = cpu.storage
+        end
+      end
       return stats
     end
   }
