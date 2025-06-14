@@ -71,10 +71,19 @@ collectors.bigreactor = function(peripheral_name)
   }
 end
 
-collectors.inductionport = function(peripheral_name)
+-- out_only is a special flag to only collect output stats. Usage is that
+-- there are two ports connected to the pc, one in input mode and one in output mode.
+-- When collecting stats, the input port should collect everything, and the output port
+-- should only collect output stats, to avoid double counting.
+collectors.inductionport = function(peripheral_name, out_only)
 
   local function build_stats(port)
     local stats = {}
+    if out_only then
+      stats.last_output = port.getLastOutput()
+      return stats
+    end
+
     stats.max_energy = port.getMaxEnergy()
     stats.energy_filled_percentage = port.getEnergyFilledPercentage()
     stats.last_input = port.getLastInput()
