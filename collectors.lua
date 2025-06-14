@@ -90,10 +90,17 @@ collectors.inductionport = function(peripheral_name)
   }
 end
 
-collectors.me_bridge = function(peripheral_name)
+collectors.me_bridge = function(peripheral_name, blockreader_name)
   local bridge = peripheral.wrap(peripheral_name)
   if not bridge then
     error("No peripheral found with name: " .. tostring(peripheral_name))
+  end
+  local blockreader = nil
+  if blockreader_name then
+    blockreader = peripheral.wrap(blockreader_name)
+    if not blockreader then
+      error("No blockReader found with name: " .. tostring(blockreader_name))
+    end
   end
   return {
     collect = function()
@@ -118,6 +125,7 @@ collectors.me_bridge = function(peripheral_name)
       --   crafting_cpu_<name>[_n]_busy: Whether the CPU is currently busy
       --   crafting_cpu_<name>[_n]_storage: Storage in bytes for the CPU
       -- If multiple CPUs have the same name, a numeric suffix (_2, _3, etc.) is added to ensure uniqueness.
+
       local cpus = bridge.getCraftingCPUs()
       if type(cpus) == "table" then
         local name_count = {}
@@ -141,6 +149,34 @@ collectors.me_bridge = function(peripheral_name)
           stats[base .. "_storage"] = cpu.storage
         end
       end
+
+
+      -- If blockreader is present, try to extract item names from lectern book (NBT structure)
+      if blockreader then
+        local ok, blockdata = pcall(function() return blockreader.getBlockData() end)
+        if ok and type(blockdata) == "table" and blockdata.Book and type(blockdata.Book) == "table" then
+          local components = blockdata.Book.components
+          if type(components) == "table" then
+            local book_content = components["minecraft:writable_book_content"]
+            if type(book_content) == "table" and type(book_content.pages) == "table" then
+              local item_names = {}
+              for _, page in ipairs(book_content.pages) do
+                if type(page) == "table" and type(page.raw) == "string" then
+                  for line in page.raw:gmatch("[^\r\n]+") do
+                    -- Remove all Minecraft color codes (e.g., §0, §a) from the line
+                    local clean_line = line:gsub("§.", "")
+                    table.insert(item_names, clean_line)
+                  end
+                end
+              end
+              for i, item_name in ipairs(item_names) do
+                print(item_name)
+              end
+            end
+          end
+        end
+      end
+
       return stats
     end
   }
