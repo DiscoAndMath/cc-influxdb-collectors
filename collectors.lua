@@ -163,8 +163,10 @@ collectors.me_bridge = function(peripheral_name, blockreader_name)
               for _, page in ipairs(book_content.pages) do
                 if type(page) == "table" and type(page.raw) == "string" then
                   for line in page.raw:gmatch("[^\r\n]+") do
-                    -- Remove all Minecraft color codes (e.g., §0, §a) from the line
-                    local clean_line = line:gsub("§.", "")
+                    -- Remove all Minecraft color codes (e.g., §0, §a), stray section signs (§), and any non-ASCII/control characters
+                    local clean_line = line:gsub("§.", ""):gsub("§", "")
+                    -- Only allow a-z, A-Z, 0-9, _, :, ., -, and space
+                    clean_line = clean_line:gsub("[^a-zA-Z0-9_:%.%- ]", "")
                     table.insert(item_names, clean_line)
                   end
                 end
