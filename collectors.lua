@@ -169,8 +169,18 @@ collectors.me_bridge = function(peripheral_name, blockreader_name)
                   end
                 end
               end
-              for i, item_name in ipairs(item_names) do
-                print(item_name)
+              for _, item_name in ipairs(item_names) do
+                -- Query ME Bridge for item count
+                local item = bridge.getItem and bridge.getItem({name=item_name})
+                if type(item) == "table" and type(item.count) == "number" then
+                  -- Replace colons with underscores for InfluxDB stat name
+                  local safe_name = item_name:gsub(":", "_")
+                  stats["item_count_" .. safe_name] = item.count
+                else
+                  -- If item not found, report zero
+                  local safe_name = item_name:gsub(":", "_")
+                  stats["item_count_" .. safe_name] = 0
+                end
               end
             end
           end
