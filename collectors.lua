@@ -177,9 +177,8 @@ collectors.me_bridge = function(peripheral_name, blockreader_name)
                   local safe_name = item_name:gsub(":", "_")
                   stats["item_count_" .. safe_name] = item.count
                 else
-                  -- If item not found, report zero
-                  local safe_name = item_name:gsub(":", "_")
-                  stats["item_count_" .. safe_name] = 0
+                  -- If item not found, don't report, because the name might be wrong and dirty the data
+                  print("Item not found in ME Bridge: " .. item_name)
                 end
               end
             end
