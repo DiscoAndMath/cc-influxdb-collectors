@@ -2,7 +2,8 @@ local github_base = "https://raw.githubusercontent.com/StuartAndMath/cc-influxdb
 
 local files = {
   "influxdb.lua",
-  "collectors.lua"
+  "collectors.lua",
+  "me_bridge_collector.lua"
 }
 
 for _, file in ipairs(files) do

@@ -71,19 +71,10 @@ collectors.bigreactor = function(peripheral_name)
   }
 end
 
--- out_only is a special flag to only collect output stats. Usage is that
--- there are two ports connected to the pc, one in input mode and one in output mode.
--- When collecting stats, the input port should collect everything, and the output port
--- should only collect output stats, to avoid double counting.
-collectors.inductionport = function(peripheral_name, out_only)
+collectors.inductionport = function(peripheral_name)
 
   local function build_stats(port)
     local stats = {}
-    if out_only then
-      stats.last_output = port.getLastOutput()
-      return stats
-    end
-
     stats.max_energy = port.getMaxEnergy()
     stats.energy_filled_percentage = port.getEnergyFilledPercentage()
     stats.last_input = port.getLastInput()
@@ -113,83 +104,50 @@ collectors.inductionport = function(peripheral_name, out_only)
   }
 end
 
-collectors.me_bridge = function(peripheral_name, blockreader_name)
-
-  local function build_stats(bridge, blockreader)
+collectors.mek_fission = function(peripheral_name)
+  local function build_stats(reactor)
     local stats = {}
-    stats.total_item_storage = bridge.getTotalItemStorage()
-    stats.used_item_storage = bridge.getUsedItemStorage()
-    stats.available_item_storage = bridge.getAvailableItemStorage()
-
-    stats.total_fluid_storage = bridge.getTotalFluidStorage()
-    stats.used_fluid_storage = bridge.getUsedFluidStorage()
-    stats.available_fluid_storage = bridge.getAvailableFluidStorage()
-
-    stats.energy_storage = bridge.getEnergyStorage()
-    stats.max_energy_storage = bridge.getMaxEnergyStorage()
-    stats.energy_usage = bridge.getEnergyUsage()
-    stats.avg_power_injection = bridge.getAvgPowerInjection()
-    stats.avg_power_usage = bridge.getAvgPowerUsage()
-
-    -- Crafting CPUs
-    local cpus = bridge.getCraftingCPUs()
-    if type(cpus) == "table" then
-      local name_count = {}
-      for i, cpu in ipairs(cpus) do
-        local name = (cpu.name or "unnamed"):lower()
-        local base = "crafting_cpu_" .. name
-        local field = base
-        if stats[field .. "_coprocessors"] then
-          local n = name_count[name] or 1
-          repeat
-            n = n + 1
-            field = base .. "_" .. n
-          until not stats[field .. "_coprocessors"]
-          name_count[name] = n
-          base = field
-        else
-          name_count[name] = 1
-        end
-        stats[base .. "_coprocessors"] = cpu.coProcessors
-        stats[base .. "_busy"] = cpu.isBusy
-        stats[base .. "_storage"] = cpu.storage
-      end
-    end
-
-    -- If blockreader is present, try to extract item names from lectern book (NBT structure)
-    if blockreader then
-      local ok, blockdata = pcall(function() return blockreader.getBlockData() end)
-      if ok and type(blockdata) == "table" and blockdata.Book and type(blockdata.Book) == "table" then
-        local components = blockdata.Book.components
-        if type(components) == "table" then
-          local book_content = components["minecraft:writable_book_content"]
-          if type(book_content) == "table" and type(book_content.pages) == "table" then
-            local item_names = {}
-            for _, page in ipairs(book_content.pages) do
-              if type(page) == "table" and type(page.raw) == "string" then
-                -- Remove the first two characters from the page (to skip color codes or weirdness)
-                local page_text = page.raw:sub(3)
-                for line in page_text:gmatch("[^\r\n]+") do
-                  table.insert(item_names, line)
-                end
-              end
-            end
-            for _, item_name in ipairs(item_names) do
-              -- Query ME Bridge for item count
-              local item = bridge.getItem and bridge.getItem({name=item_name})
-              if type(item) == "table" and type(item.count) == "number" then
-                -- Replace colons with underscores for InfluxDB stat name
-                local safe_name = item_name:gsub(":", "_")
-                stats["item_count_" .. safe_name] = item.count
-              else
-                -- If item not found, don't report, because the name might be wrong and dirty the data
-                print("Item not found in ME Bridge: " .. item_name)
-              end
-            end
-          end
-        end
-      end
-    end
+    stats.height = reactor.getHeight()
+    stats.width = reactor.getWidth()
+    stats.logic_mode = reactor.getLogicMode()
+    stats.fuel_needed = reactor.getFuelNeeded()
+    stats.environmental_loss = reactor.getEnvironmentalLoss()
+    stats.heated_coolant = reactor.getHeatedCoolant()
+    stats.fuel_filled_percentage = reactor.getFuelFilledPercentage()
+    stats.waste = reactor.getWaste()
+    stats.redstone_mode = reactor.getRedstoneMode()
+    stats.max_pos = reactor.getMaxPos()
+    stats.actual_burn_rate = reactor.getActualBurnRate()
+    stats.is_formed = reactor.isFormed()
+    stats.heating_rate = reactor.getHeatingRate()
+    stats.is_force_disabled = reactor.isForceDisabled()
+    stats.heat_capacity = reactor.getHeatCapacity()
+    stats.waste_capacity = reactor.getWasteCapacity()
+    stats.burn_rate = reactor.getBurnRate()
+    stats.min_pos = reactor.getMinPos()
+    stats.coolant_capacity = reactor.getCoolantCapacity()
+    stats.waste_needed = reactor.getWasteNeeded()
+    stats.fuel = reactor.getFuel()
+    stats.fuel_assemblies = reactor.getFuelAssemblies()
+    stats.coolant_filled_percentage = reactor.getCoolantFilledPercentage()
+    stats.coolant_needed = reactor.getCoolantNeeded()
+    stats.heated_coolant_filled_percentage = reactor.getHeatedCoolantFilledPercentage()
+    stats.width = reactor.getWidth()
+    stats.heated_coolant_needed = reactor.getHeatedCoolantNeeded()
+    stats.temperature = reactor.getTemperature()
+    stats.length = reactor.getLength()
+    stats.heated_coolant_capacity = reactor.getHeatedCoolantCapacity()
+    stats.fuel_surface_area = reactor.getFuelSurfaceArea()
+    stats.max_burn_rate = reactor.getMaxBurnRate()
+    stats.redstone_logic_status = reactor.getRedstoneLogicStatus()
+    stats.damage_percent = reactor.getDamagePercent()
+    stats.height = reactor.getHeight()
+    stats.burn_rate = reactor.getBurnRate()
+    stats.boil_efficiency = reactor.getBoilEfficiency()
+    stats.waste_filled_percentage = reactor.getWasteFilledPercentage()
+    stats.status = reactor.getStatus()
+    stats.fuel_capacity = reactor.getFuelCapacity()
+    stats.coolant = reactor.getCoolant()
     return stats
   end
 
@@ -198,19 +156,21 @@ collectors.me_bridge = function(peripheral_name, blockreader_name)
       if not peripheral.isPresent(peripheral_name) then
         return nil, "No peripheral found with name: " .. tostring(peripheral_name)
       end
-      local bridge = peripheral.wrap(peripheral_name)
-      local blockreader = nil
-      if blockreader_name then
-        if not peripheral.isPresent(blockreader_name) then
-          return nil, "No blockReader found with name: " .. tostring(blockreader_name)
-        end
-        blockreader = peripheral.wrap(blockreader_name)
-      end
-      local ok, stats_or_err = pcall(build_stats, bridge, blockreader)
+      local port = peripheral.wrap(peripheral_name)
+      local ok, stats_or_err = pcall(build_stats, port)
       if not ok then
-        return nil, "Error collecting me_bridge stats: " .. tostring(stats_or_err)
+        return nil, "Error collecting fission reactor stats: " .. tostring(stats_or_err)
       end
       return stats_or_err, nil
+    end
+  }
+end
+
+local me_bridge_collector = require("me_bridge_collector")
+collectors.me_bridge = function(peripheral_name, blockreader_name)
+  return {
+    collect = function()
+      return me_bridge_collector.collect(peripheral_name, blockreader_name)
     end
   }
 end
