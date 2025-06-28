@@ -175,4 +175,33 @@ collectors.me_bridge = function(peripheral_name, blockreader_name)
   return {collect = function() return me_bridge_collector.collect(peripheral_name, blockreader_name) end}
 end
 
+
+-- Advanced Peripherals Environment Detector Collector
+collectors.environment_detector = function(peripheral_name)
+  local function build_stats(detector)
+    local stats = {}
+    local dim = detector.getDimension()
+    if not dim or dim == "" then dim = "unknown" end
+    local prefix = dim .. "_"
+    stats[prefix .. "server_time"] = detector.getTime()
+    stats[prefix .. "moon_phase"] = detector.getMoonName()
+    stats[prefix .. "is_sunny"] = detector.isSunny()
+    stats[prefix .. "is_raining"] = detector.isRaining()
+    stats[prefix .. "is_thundering"] = detector.isThunder()
+    return stats
+  end
+
+  return {
+    collect = function()
+      if not peripheral.isPresent(peripheral_name) then
+        return nil, "No peripheral found with name: " .. tostring(peripheral_name)
+      end
+      local detector = peripheral.wrap(peripheral_name)
+      local ok, stats_or_err = pcall(build_stats, detector)
+      if not ok then return nil, "Error collecting environment detector stats: " .. tostring(stats_or_err) end
+      return stats_or_err, nil
+    end
+  }
+end
+
 return collectors
