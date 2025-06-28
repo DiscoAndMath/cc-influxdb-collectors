@@ -13,11 +13,7 @@ collectors.bigreactor = function(peripheral_name)
 
     -- Control rod levels as individual stats
     local levels = reactor.getControlRodsLevels and reactor.getControlRodsLevels()
-    if type(levels) == "table" then
-      for i, v in ipairs(levels) do
-        stats["control_rod_level_" .. i] = v
-      end
-    end
+    if type(levels) == "table" then for i, v in ipairs(levels) do stats["control_rod_level_" .. i] = v end end
 
     -- Fuel stats
     local fuel = reactor.getFuelStats and reactor.getFuelStats()
@@ -63,9 +59,7 @@ collectors.bigreactor = function(peripheral_name)
       end
       local reactor = peripheral.wrap(peripheral_name)
       local ok, stats_or_err = pcall(build_stats, reactor)
-      if not ok then
-        return nil, "Error collecting reactor stats: " .. tostring(stats_or_err)
-      end
+      if not ok then return nil, "Error collecting reactor stats: " .. tostring(stats_or_err) end
       return stats_or_err, nil
     end
   }
@@ -96,9 +90,7 @@ collectors.inductionport = function(peripheral_name)
       end
       local port = peripheral.wrap(peripheral_name)
       local ok, stats_or_err = pcall(build_stats, port)
-      if not ok then
-        return nil, "Error collecting inductionport stats: " .. tostring(stats_or_err)
-      end
+      if not ok then return nil, "Error collecting inductionport stats: " .. tostring(stats_or_err) end
       return stats_or_err, nil
     end
   }
@@ -107,16 +99,33 @@ end
 collectors.mek_fission = function(peripheral_name)
   local function build_stats(reactor)
     local stats = {}
+    heated_coolant = reactor.getHeatedCoolant()
+    if heated_coolant then
+      stats.heated_coolant_name = heated_coolant.name
+      stats.heated_coolant_amount = heated_coolant.amount
+    end
+    waste = reactor.getWaste()
+    if waste then
+      stats.waste_name = waste.name
+      stats.waste_amount = waste.amount
+    end
+    fuel = reactor.getFuel()
+    if fuel then
+      stats.fuel_name = fuel.name
+      stats.fuel_amount = fuel.amount
+    end
+    coolant = reactor.getCoolant()
+    if coolant then
+      stats.coolant_name = coolant.name
+      stats.coolant_amount = coolant.amount
+    end
     stats.height = reactor.getHeight()
     stats.width = reactor.getWidth()
     stats.logic_mode = reactor.getLogicMode()
     stats.fuel_needed = reactor.getFuelNeeded()
     stats.environmental_loss = reactor.getEnvironmentalLoss()
-    stats.heated_coolant = reactor.getHeatedCoolant()
     stats.fuel_filled_percentage = reactor.getFuelFilledPercentage()
-    stats.waste = reactor.getWaste()
     stats.redstone_mode = reactor.getRedstoneMode()
-    stats.max_pos = reactor.getMaxPos()
     stats.actual_burn_rate = reactor.getActualBurnRate()
     stats.is_formed = reactor.isFormed()
     stats.heating_rate = reactor.getHeatingRate()
@@ -124,10 +133,8 @@ collectors.mek_fission = function(peripheral_name)
     stats.heat_capacity = reactor.getHeatCapacity()
     stats.waste_capacity = reactor.getWasteCapacity()
     stats.burn_rate = reactor.getBurnRate()
-    stats.min_pos = reactor.getMinPos()
     stats.coolant_capacity = reactor.getCoolantCapacity()
     stats.waste_needed = reactor.getWasteNeeded()
-    stats.fuel = reactor.getFuel()
     stats.fuel_assemblies = reactor.getFuelAssemblies()
     stats.coolant_filled_percentage = reactor.getCoolantFilledPercentage()
     stats.coolant_needed = reactor.getCoolantNeeded()
@@ -147,7 +154,6 @@ collectors.mek_fission = function(peripheral_name)
     stats.waste_filled_percentage = reactor.getWasteFilledPercentage()
     stats.status = reactor.getStatus()
     stats.fuel_capacity = reactor.getFuelCapacity()
-    stats.coolant = reactor.getCoolant()
     return stats
   end
 
@@ -158,9 +164,7 @@ collectors.mek_fission = function(peripheral_name)
       end
       local port = peripheral.wrap(peripheral_name)
       local ok, stats_or_err = pcall(build_stats, port)
-      if not ok then
-        return nil, "Error collecting fission reactor stats: " .. tostring(stats_or_err)
-      end
+      if not ok then return nil, "Error collecting fission reactor stats: " .. tostring(stats_or_err) end
       return stats_or_err, nil
     end
   }
@@ -168,11 +172,7 @@ end
 
 local me_bridge_collector = require("me_bridge_collector")
 collectors.me_bridge = function(peripheral_name, blockreader_name)
-  return {
-    collect = function()
-      return me_bridge_collector.collect(peripheral_name, blockreader_name)
-    end
-  }
+  return {collect = function() return me_bridge_collector.collect(peripheral_name, blockreader_name) end}
 end
 
 return collectors
